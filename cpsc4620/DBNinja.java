@@ -158,12 +158,27 @@ public final class DBNinja {
 		 * This method adds a new customer to the database.
 		 * 
 		 */
-				
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		PreparedStatement os;
+		String query;
+		if (c.getAddress() == null) {
+			query = "INSERT INTO customer (CustID, FName, LName, Phone) VALUES (?,?,?,?)";
+		}
+		else {
+			query = "INSERT INTO customer (CustID, FName, LName, Phone, Address) VALUES (?,?,?,?,?)";
+		}
+		os = conn.prepareStatement(query);
+		os.setInt(1, c.getCustID());
+		os.setString(2, c.getFName());
+		os.setString(3, c.getLName());
+		os.setString(4, c.getPhone());
+		if (c.getAddress() != null) {
+			os.setString(5, c.getAddress());
+		}
+
+		os.executeUpdate();
+
+		conn.close();
+		return; 
 	}
 
 	public static void completeOrder(Order o) throws SQLException, IOException {
