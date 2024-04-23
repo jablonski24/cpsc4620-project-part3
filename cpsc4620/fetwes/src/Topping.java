@@ -1,6 +1,4 @@
-package cpsc4620;
-
-public class Topping 
+public class Topping
 {
 	private int TopID;
 	private String TopName;

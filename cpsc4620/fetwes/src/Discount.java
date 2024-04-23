@@ -1,6 +1,4 @@
-package cpsc4620;
-
-public class Discount 
+public class Discount
 {
 	private int DiscountID;
 	private String DiscountName;

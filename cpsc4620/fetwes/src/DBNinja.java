@@ -1,5 +1,3 @@
-package cpsc4620;
-
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
@@ -103,7 +101,7 @@ public final class DBNinja {
 		 * This method should do 2 two things.
 		 * - update the topping inventory every time we use t topping (accounting for extra toppings as well)
 		 * - connect the topping to the pizza
-		 *   What that means will be specific to your yimplementatinon.
+		 *   What that means will be specific to your implementatinon.
 		 * 
 		 * Ideally, you should't let toppings go negative....but this should be dealt with BEFORE calling this method.
 		 * 
@@ -158,24 +156,32 @@ public final class DBNinja {
 		 * This method adds a new customer to the database.
 		 * 
 		 */
+
+		if (conn == null) {
+			System.out.println("null");
+		}
+
 		PreparedStatement os;
 		String query;
 		if (c.getAddress() == null) {
-			query = "INSERT INTO customer (CustID, FName, LName, Phone) VALUES (?,?,?,?)";
+			query = "INSERT INTO customer (CustomerFirstName, CustomerLastName, CustomerPhone) VALUES (?,?,?)";
 		}
 		else {
-			query = "INSERT INTO customer (CustID, FName, LName, Phone, Address) VALUES (?,?,?,?,?)";
+			query = "INSERT INTO customer (CustomerFirstName, CustomerLastName, CustomerPhone, CustomerCity) VALUES (?,?,?,?)";
 		}
+		System.out.println(query);
+		System.out.println("1");
 		os = conn.prepareStatement(query);
-		os.setInt(1, c.getCustID());
-		os.setString(2, c.getFName());
-		os.setString(3, c.getLName());
-		os.setString(4, c.getPhone());
+		System.out.println("2");
+		os.setString(1, c.getFName());
+		os.setString(2, c.getLName());
+		os.setString(3, c.getPhone());
 		if (c.getAddress() != null) {
-			os.setString(5, c.getAddress());
+			os.setString(4, c.getAddress());
 		}
-
+		System.out.println("3");
 		os.executeUpdate();
+		System.out.println("4");
 
 		conn.close();
 		return; 

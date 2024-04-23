@@ -1,5 +1,3 @@
-package cpsc4620;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -148,8 +146,11 @@ public class Menu {
 		 */
 		
 		// User Input Prompts...
-		 System.out.println("What is this customer's name (first <space> last");
-		 System.out.println("What is this customer's phone number (##########) (No dash/space)");
+		//  System.out.println("What is this customer's name (first <space> last");
+		//  System.out.println("What is this customer's phone number (##########) (No dash/space)");
+
+		Customer cust = new Customer(0,"Bob", "Jones", "4072222222");
+		DBNinja.addCustomer(cust);
  
 
 	}

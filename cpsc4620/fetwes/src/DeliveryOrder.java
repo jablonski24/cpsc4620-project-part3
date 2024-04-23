@@ -1,5 +1,3 @@
-package cpsc4620;
-
 public class DeliveryOrder extends Order
 {
 	private String Address;

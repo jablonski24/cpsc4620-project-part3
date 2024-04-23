@@ -1,4 +1,3 @@
-package cpsc4620;
 import java.util.ArrayList;
 
 public class Pizza 

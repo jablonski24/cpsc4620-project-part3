@@ -1,6 +1,4 @@
-package cpsc4620;
-
-public class Customer 
+public class Customer
 {
 	private int CustID;
 	private String FName;

@@ -1,5 +1,3 @@
-package cpsc4620;
-
 public class DineinOrder extends Order{
 	
 	private int TableNum;

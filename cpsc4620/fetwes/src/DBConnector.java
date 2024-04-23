@@ -1,5 +1,3 @@
-package cpsc4620;
-
 import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -19,9 +17,9 @@ public class DBConnector {
     // enter your password here
     protected static String password = "ClemsonTiger123";
     // enter your database name here
-    private static String database_name = "database-3-project-3";
+    private static String database_name = "Pizzeria";
     // Do not change the port. 3306 is the default MySQL port
-    private static String url = "database-3-project-3.cnskkymqgtvl.us-east-1.rds.amazonaws.com";
+    private static String url = "jdbc:mysql://database-3-project-3.cnskkymqgtvl.us-east-1.rds.amazonaws.com";
     private static Connection conn;
 
 
@@ -35,6 +33,7 @@ public class DBConnector {
     public static Connection make_connection() throws SQLException, IOException {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
+            System.out.println("works");
         } catch (ClassNotFoundException e) {
             System.out.println("Could not load the driver");
 
@@ -43,6 +42,7 @@ public class DBConnector {
             return null;
         }
 
+        System.out.println(url + user + password + database_name);
         conn = DriverManager.getConnection(url + "/" + database_name, user, password);
         return conn;
     }
