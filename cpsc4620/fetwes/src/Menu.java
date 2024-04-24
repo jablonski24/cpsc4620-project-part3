@@ -124,10 +124,7 @@ public class Menu {
 		 * Simply print out all of the customers from the database. 
 		 */
 		
-		
-		
-		
-		
+
 		
 	}
 	
@@ -168,17 +165,80 @@ public class Menu {
 		* After displaying the list of orders (in a condensed format) must allow the user to select a specific order for viewing its details.  
 		* The details include the full order type information, the pizza information (including pizza discounts), and the order discounts.
 		* 
-		*/ 
-			
+		*/
+
+		String buffer;
+		ArrayList<Order> orders;
 		
 		// User Input Prompts...
 		System.out.println("Would you like to:\n(a) display all orders [open or closed]\n(b) display all open orders\n(c) display all completed [closed] orders\n(d) display orders since a specific date");
-		System.out.println("What is the date you want to restrict by? (FORMAT= YYYY-MM-DD)");
-		System.out.println("I don't understand that input, returning to menu");
-		System.out.println("Which order would you like to see in detail? Enter the number (-1 to exit): ");
-		System.out.println("Incorrect entry, returning to menu.");
-		System.out.println("No orders to display, returning to menu.");
+		buffer = reader.readLine();
+		if (buffer.charAt(0) == 'a') {
+			orders = DBNinja.getOrders(false);
+			if (orders.size() == 0) {
+				System.out.println("No orders to display, returning to menu.");
+			}
+			else {
+				for (int i = 0; i < orders.size(); i++) {
+					System.out.println(orders.get(i).toSimplePrint());
+				}
+			}
+		}
+		else if (buffer.charAt(0) == 'b') {
+			orders = DBNinja.getOrders(true);
+			if (orders.size() == 0) {
+				System.out.println("No orders to display, returning to menu.");
+			}
+			else {
+				for (int i = 0; i < orders.size(); i++) {
+					System.out.println(orders.get(i).toSimplePrint());
+				}
+			}
+		}
+		else if (buffer.charAt(0) == 'c') {
+			orders = DBNinja.getOrders(false);
+			if (orders.size() == 0) {
+				System.out.println("No orders to display, returning to menu.");
+			}
+			else {
+				for (int i = 0; i < orders.size(); i++) {
+					if (orders.get(i).getIsComplete() == 1) {
+						System.out.println(orders.get(i).toSimplePrint());
+					}
+				}
+			}
+		}
+		else if (buffer.charAt(0) == 'd') {
+			System.out.println("What is the date you want to restrict by? (FORMAT= YYYY-MM-DD)");
+			buffer = reader.readLine();
+			int year, month, day;
+			year = DBNinja.getYear(buffer);
+			month = DBNinja.getMonth(buffer);
+			day = DBNinja.getDay(buffer);
 
+			orders = DBNinja.getOrders(false);
+			if (orders.size() == 0) {
+				System.out.println("No orders to display, returning to menu.");
+			}
+			else {
+				for (int i = 0; i < orders.size(); i++) {
+					if (DBNinja.checkDate(year,month,day, orders.get(i).getDate()) == false) {
+						break;
+					}
+					System.out.println(orders.get(i).toSimplePrint());
+				}
+			}
+		}
+		else {
+			System.out.println("I don't understand that input, returning to menu");
+		}
+
+//		System.out.println("I don't understand that input, returning to menu");
+//		System.out.println("Which order would you like to see in detail? Enter the number (-1 to exit): ");
+//		System.out.println("Incorrect entry, returning to menu.");
+//		System.out.println("No orders to display, returning to menu.");
+
+		DBNinja.getOrders(false);
 
 
 	}

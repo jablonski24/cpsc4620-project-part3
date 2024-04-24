@@ -170,18 +170,14 @@ public final class DBNinja {
 			query = "INSERT INTO customer (CustomerFirstName, CustomerLastName, CustomerPhone, CustomerCity) VALUES (?,?,?,?)";
 		}
 		System.out.println(query);
-		System.out.println("1");
 		os = conn.prepareStatement(query);
-		System.out.println("2");
 		os.setString(1, c.getFName());
 		os.setString(2, c.getLName());
 		os.setString(3, c.getPhone());
 		if (c.getAddress() != null) {
 			os.setString(4, c.getAddress());
 		}
-		System.out.println("3");
 		os.executeUpdate();
-		System.out.println("4");
 
 		conn.close();
 		return; 
@@ -219,11 +215,96 @@ public final class DBNinja {
 		 * 
 		 */
 
+		ArrayList<Order> returnList = new ArrayList<>();
 
+		PreparedStatement os;
+		ResultSet rset;
+		String query;
+		query = "SELECT \n" +
+				"    o.OrderID,\n" +
+				"    o.OrderType,\n" +
+				"    o.OrderTimestamp,\n" +
+				"    o.OrderStatus,\n" +
+				"    o.OrderPrice,\n" +
+				"    o.OrderCost,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType IN ('DELIVERY', 'PICKUP') THEN c.CustomerID\n" +
+				"        ELSE '0' -- Placeholder for DineIn orders\n" +
+				"    END AS CustomerID,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerState\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerState,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerCity\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerCity,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerStreet\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerStreet,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerZip\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerZip\n" +
+				"FROM\n" +
+				"    `order` o\n" +
+				"LEFT JOIN\n" +
+				"    (SELECT\n" +
+				"         PickUpOrderID AS OrderID,\n" +
+				"         PickUpCustomerID AS CustomerID\n" +
+				"     FROM\n" +
+				"         pickup\n" +
+				"     UNION ALL\n" +
+				"     SELECT\n" +
+				"         DeliveryOrderID AS OrderID,\n" +
+				"         DeliveryCustomerID AS CustomerID\n" +
+				"     FROM\n" +
+				"         delivery\n" +
+				"     UNION ALL\n" +
+				"     SELECT\n" +
+				"         DineInOrderID AS OrderID,\n" +
+				"         NULL AS CustomerID -- No customer ID for DineIn\n" +
+				"     FROM\n" +
+				"         dinein) AS ord_cust ON ord_cust.OrderID = o.OrderID\n" +
+				"LEFT JOIN\n" +
+				"    customer c ON ord_cust.CustomerID = c.CustomerID\n" +
+				"ORDER BY o.OrderTimestamp DESC;";
+
+		os = conn.prepareStatement(query);
+		rset = os.executeQuery();
+		while(rset.next())
+		{
+			int orderStatus = (rset.getString("OrderStatus").equals("COMPLETED")) ? 1 : 0;
+			if (openOnly) {
+				if (orderStatus == 1) {
+					continue;
+				}
+			}
+
+			Order currOrder;
+			if (rset.getString("OrderType").equals("PICKUP")) {
+				currOrder = new PickupOrder(rset.getInt("OrderID"), rset.getInt("CustomerID"), rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), 1, orderStatus);
+			}
+			else if (rset.getString("OrderType").equals("DELIVERY")) {
+				String addr = "";
+				addr += rset.getString("CustomerStreet") + " ";
+				addr += rset.getString("CustomerCity") + " ";
+				addr += rset.getString("CustomerState") + " ";
+				addr += rset.getString("CustomerZip");
+				currOrder = new DeliveryOrder(rset.getInt("OrderID"), rset.getInt("CustomerID"), rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), orderStatus, addr);
+			}
+			else { //Dine in
+				currOrder = new DineinOrder(rset.getInt("OrderID"), 0, rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), orderStatus, 1);
+			}
+			returnList.add(currOrder);
+		}
+
+		conn.close();
 
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		return returnList;
 	}
 	
 	public static Order getLastOrder(){
@@ -232,10 +313,95 @@ public final class DBNinja {
 		 * then return an Order object for that order.
 		 * NOTE...there should ALWAYS be a "last order"!
 		 */
-		
+		try {
+			connect_to_db();
+		}
+		catch (IOException | SQLException e){
+			System.out.println(e);
+		}
+		PreparedStatement os;
+		ResultSet rset;
+		String query;
+		query = "SELECT \n" +
+				"    o.OrderID,\n" +
+				"    o.OrderType,\n" +
+				"    o.OrderTimestamp,\n" +
+				"    o.OrderStatus,\n" +
+				"    o.OrderPrice,\n" +
+				"    o.OrderCost,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType IN ('DELIVERY', 'PICKUP') THEN c.CustomerID\n" +
+				"        ELSE '0' -- Placeholder for DineIn orders\n" +
+				"    END AS CustomerID,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerState\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerState,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerCity\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerCity,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerStreet\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerStreet,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerZip\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerZip\n" +
+				"FROM\n" +
+				"    `order` o\n" +
+				"LEFT JOIN\n" +
+				"    (SELECT\n" +
+				"         PickUpOrderID AS OrderID,\n" +
+				"         PickUpCustomerID AS CustomerID\n" +
+				"     FROM\n" +
+				"         pickup\n" +
+				"     UNION ALL\n" +
+				"     SELECT\n" +
+				"         DeliveryOrderID AS OrderID,\n" +
+				"         DeliveryCustomerID AS CustomerID\n" +
+				"     FROM\n" +
+				"         delivery\n" +
+				"     UNION ALL\n" +
+				"     SELECT\n" +
+				"         DineInOrderID AS OrderID,\n" +
+				"         NULL AS CustomerID -- No customer ID for DineIn\n" +
+				"     FROM\n" +
+				"         dinein) AS ord_cust ON ord_cust.OrderID = o.OrderID\n" +
+				"LEFT JOIN\n" +
+				"    customer c ON ord_cust.CustomerID = c.CustomerID\n" +
+				"ORDER BY o.OrderTimestamp DESC\n" +
+				"LIMIT 1;";
 
+		try {
+			os = conn.prepareStatement(query);
+			rset = os.executeQuery();
+			rset.next();
 
+			int orderStatus = (rset.getString("OrderStatus").equals("COMPLETED")) ? 1 : 0;
+			Order currOrder;
+			if (rset.getString("OrderType").equals("PICKUP")) {
+				currOrder = new PickupOrder(rset.getInt("OrderID"), rset.getInt("CustomerID"), rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), 1, orderStatus);
+			}
+			else if (rset.getString("OrderType").equals("DELIVERY")) {
+				String addr = "";
+				addr += rset.getString("CustomerStreet") + " ";
+				addr += rset.getString("CustomerCity") + " ";
+				addr += rset.getString("CustomerState") + " ";
+				addr += rset.getString("CustomerZip");
+				currOrder = new DeliveryOrder(rset.getInt("OrderID"), rset.getInt("CustomerID"), rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), orderStatus, addr);
+			}
+			else { //Dine in
+				currOrder = new DineinOrder(rset.getInt("OrderID"), 0, rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), orderStatus, 1);
+			}
 
+			conn.close();
+			return currOrder;
+		}
+		catch (SQLException e){
+			System.out.println(e);
+		}
 
 		 return null;
 	}
@@ -246,10 +412,102 @@ public final class DBNinja {
 		 * and return a list of those orders.
 		 *  
 		 */
-		
+		try {
+			connect_to_db();
+		}
+		catch (IOException | SQLException e){
+			System.out.println(e);
+		}
+		PreparedStatement os;
+		ResultSet rset;
+		String query;
+		query = "SELECT \n" +
+				"    o.OrderID,\n" +
+				"    o.OrderType,\n" +
+				"    o.OrderTimestamp,\n" +
+				"    o.OrderStatus,\n" +
+				"    o.OrderPrice,\n" +
+				"    o.OrderCost,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType IN ('DELIVERY', 'PICKUP') THEN c.CustomerID\n" +
+				"        ELSE '0' -- Placeholder for DineIn orders\n" +
+				"    END AS CustomerID,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerState\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerState,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerCity\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerCity,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerStreet\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerStreet,\n" +
+				"    CASE \n" +
+				"        WHEN o.OrderType = 'DELIVERY' THEN c.CustomerZip\n" +
+				"        ELSE NULL\n" +
+				"    END AS CustomerZip\n" +
+				"FROM\n" +
+				"    `order` o\n" +
+				"LEFT JOIN\n" +
+				"    (SELECT\n" +
+				"         PickUpOrderID AS OrderID,\n" +
+				"         PickUpCustomerID AS CustomerID\n" +
+				"     FROM\n" +
+				"         pickup\n" +
+				"     UNION ALL\n" +
+				"     SELECT\n" +
+				"         DeliveryOrderID AS OrderID,\n" +
+				"         DeliveryCustomerID AS CustomerID\n" +
+				"     FROM\n" +
+				"         delivery\n" +
+				"     UNION ALL\n" +
+				"     SELECT\n" +
+				"         DineInOrderID AS OrderID,\n" +
+				"         NULL AS CustomerID -- No customer ID for DineIn\n" +
+				"     FROM\n" +
+				"         dinein) AS ord_cust ON ord_cust.OrderID = o.OrderID\n" +
+				"LEFT JOIN\n" +
+				"    customer c ON ord_cust.CustomerID = c.CustomerID\n" +
+				"WHERE DATE(o.OrderTimeStamp) = ?;";
+
+		try {
+			os = conn.prepareStatement(query);
+			os.setString(1, date);
+			rset = os.executeQuery();
+
+			ArrayList<Order> returnList = new ArrayList<>();
+			while(rset.next())
+			{
+				int orderStatus = (rset.getString("OrderStatus").equals("COMPLETED")) ? 1 : 0;
+
+				Order currOrder;
+				if (rset.getString("OrderType").equals("PICKUP")) {
+					currOrder = new PickupOrder(rset.getInt("OrderID"), rset.getInt("CustomerID"), rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), 1, orderStatus);
+				}
+				else if (rset.getString("OrderType").equals("DELIVERY")) {
+					String addr = "";
+					addr += rset.getString("CustomerStreet") + " ";
+					addr += rset.getString("CustomerCity") + " ";
+					addr += rset.getString("CustomerState") + " ";
+					addr += rset.getString("CustomerZip");
+					currOrder = new DeliveryOrder(rset.getInt("OrderID"), rset.getInt("CustomerID"), rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), orderStatus, addr);
+				}
+				else { //Dine in
+					currOrder = new DineinOrder(rset.getInt("OrderID"), 0, rset.getString("OrderTimeStamp"), rset.getDouble("OrderPrice"), rset.getDouble("OrderCost"), orderStatus, 1);
+				}
+				returnList.add(currOrder);
+			}
 
 
+			conn.close();
+			return returnList;
 
+		}
+		catch (SQLException e){
+			System.out.println(e);
+		}
 
 		 return null;
 	}
@@ -504,31 +762,35 @@ public final class DBNinja {
 		 * 
 		 */
 		String cname1 = "";
-		String query = "Select FName, LName From customer WHERE CustID=" + CustID + ";";
+		String query = "Select CustomerFirstName, CustomerLastName From customer WHERE CustomerID=" + CustID + ";";
 		Statement stmt = conn.createStatement();
 		ResultSet rset = stmt.executeQuery(query);
-		
-		while(rset.next())
-		{
-			cname1 = rset.getString(1) + " " + rset.getString(2); 
+
+		if (!rset.next()) {
+			cname1 = "INSTORE customer";
+		}
+		else {
+			do {
+				cname1 = rset.getString(1) + " " + rset.getString(2);
+			} while (rset.next());  // Continue if there are more rows
 		}
 
 		/* 
 		* an example of the same query using a prepared statement...
 		* 
 		*/
-		String cname2 = "";
-		PreparedStatement os;
-		ResultSet rset2;
-		String query2;
-		query2 = "Select FName, LName From customer WHERE CustID=?;";
-		os = conn.prepareStatement(query2);
-		os.setInt(1, CustID);
-		rset2 = os.executeQuery();
-		while(rset2.next())
-		{
-			cname2 = rset2.getString("FName") + " " + rset2.getString("LName"); // note the use of field names in the getSting methods
-		}
+//		String cname2 = "";
+//		PreparedStatement os;
+//		ResultSet rset2;
+//		String query2;
+//		query2 = "Select FName, LName From customer WHERE CustID=?;";
+//		os = conn.prepareStatement(query2);
+//		os.setInt(1, CustID);
+//		rset2 = os.executeQuery();
+//		while(rset2.next())
+//		{
+//			cname2 = rset2.getString("FName") + " " + rset2.getString("LName"); // note the use of field names in the getSting methods
+//		}
 
 		conn.close();
 		return cname1; // OR cname2
@@ -538,15 +800,15 @@ public final class DBNinja {
 	 * The next 3 private methods help get the individual components of a SQL datetime object. 
 	 * You're welcome to keep them or remove them.
 	 */
-	private static int getYear(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	public static int getYear(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(0,4));
 	}
-	private static int getMonth(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	public static int getMonth(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(5, 7));
 	}
-	private static int getDay(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	public static int getDay(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(8, 10));
 	}

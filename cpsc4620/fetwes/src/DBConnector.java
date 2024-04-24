@@ -33,7 +33,6 @@ public class DBConnector {
     public static Connection make_connection() throws SQLException, IOException {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            System.out.println("works");
         } catch (ClassNotFoundException e) {
             System.out.println("Could not load the driver");
 
@@ -42,7 +41,6 @@ public class DBConnector {
             return null;
         }
 
-        System.out.println(url + user + password + database_name);
         conn = DriverManager.getConnection(url + "/" + database_name, user, password);
         return conn;
     }
