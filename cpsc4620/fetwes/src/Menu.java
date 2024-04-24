@@ -123,9 +123,10 @@ public class Menu {
 		/*
 		 * Simply print out all of the customers from the database. 
 		 */
-		
-
-		
+		ArrayList<Customer> customers = DBNinja.getCustomerList();
+		for (int i=0; i<customers.size(); i++) {
+			System.out.println(customers.get(i).toString());
+		}
 	}
 	
 
@@ -148,6 +149,7 @@ public class Menu {
 
 		Customer cust = new Customer(0,"Bob", "Jones", "4072222222");
 		DBNinja.addCustomer(cust);
+
  
 
 	}

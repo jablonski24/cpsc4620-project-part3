@@ -546,20 +546,43 @@ public final class DBNinja {
 
 
 	public static ArrayList<Customer> getCustomerList() throws SQLException, IOException {
-		connect_to_db();
 		/*
 		 * Query the data for all the customers and return an arrayList of all the customers. 
 		 * Don't forget to order the data coming from the database appropriately.
 		 * 
 		*/
+		try {
+			connect_to_db();
+		}
+		catch (IOException | SQLException e){
+			System.out.println(e);
+		}
+		PreparedStatement os;
+		ResultSet rset;
+		String query;
+		query = "SELECT * FROM customer;";
+
+		try {
+			os = conn.prepareStatement(query);
+			rset = os.executeQuery();
+
+			ArrayList<Customer> returnList = new ArrayList<>();
+			while(rset.next())
+			{
+
+				Customer currCust = new Customer(rset.getInt(1), rset.getString(3), rset.getString(4), rset.getString(2));
+				returnList.add(currCust);
+			}
 
 
-		
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+			conn.close();
+			return returnList;
+
+		}
+		catch (SQLException e){
+			System.out.println(e);
+		}
+
 		return null;
 	}
 
@@ -570,48 +593,113 @@ public final class DBNinja {
 		 * If it's not found....then return null
 		 *  
 		 */
-		
+		try {
+			connect_to_db();
+		}
+		catch (IOException | SQLException e){
+			System.out.println(e);
+		}
+		PreparedStatement os;
+		ResultSet rset;
+		String query;
+		query = "SELECT * FROM customer WHERE CustomerPhone = ?;";
 
+		try {
+			os = conn.prepareStatement(query);
+			os.setString(1, phoneNumber);
+			rset = os.executeQuery();
 
+			Customer customer;
+			if (rset.next()) {
+				customer = new Customer(rset.getInt(1), rset.getString(3), rset.getString(4), rset.getString(2));
+			}
+			else {
+				customer = null;
+			}
 
+			conn.close();
+			return customer;
 
-		 return null;
+		}
+		catch (SQLException e){
+			System.out.println(e);
+		}
+
+		return null;
 	}
 
 
 	public static ArrayList<Topping> getToppingList() throws SQLException, IOException {
 		connect_to_db();
 		/*
-		 * Query the database for the aviable toppings and 
-		 * return an arrayList of all the available toppings. 
+		 * Query the database for the aviable toppings and
+		 * return an arrayList of all the available toppings.
 		 * Don't forget to order the data coming from the database appropriately.
-		 * 
+		 *
 		 */
 
-		
+		ArrayList<Topping> toppings = new ArrayList<>(); // Prepare the list to store Topping objects.
 
-		
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return null;
+		try {
+			// SQL query to fetch the ID, Name, and Inventory of each topping, ordered by ID
+			//String query = "SELECT * FROM topping WHERE ToppingInventory > 0 ORDER BY ToppingName";
+			String query = "SELECT * FROM topping ORDER BY ToppingName";
+			PreparedStatement pstmt = conn.prepareStatement(query);
+			ResultSet rs = pstmt.executeQuery();
+
+			// Loop through each result row and create a Topping object
+			while (rs.next()) {
+				int toppingId = rs.getInt("ToppingID");
+				String toppingName = rs.getString("ToppingName");
+				double BusPricePerUnit = rs.getDouble("ToppingPricePerUnit");
+				double CustCostPerUnit = rs.getDouble("ToppingCostPerUnit");
+				int toppingInventory = rs.getInt("ToppingInventory");
+				int minimumInventory = rs.getInt("ToppingMinimum");
+				double small = rs.getDouble("ToppingSmall");
+				double medium = rs.getDouble("ToppingMedium");
+				double large = rs.getDouble("ToppingLarge");
+				double xlarge = rs.getDouble("ToppingXLarge");
+
+				// Create a new Topping object and add it to the list
+				Topping topping = new Topping(toppingId, toppingName, small, medium, large, xlarge, CustCostPerUnit, BusPricePerUnit, minimumInventory, toppingInventory);
+				toppings.add(topping);
+
+			}
+		} catch (SQLException ex) {
+			System.out.println("SQL Error: " + ex.getMessage());
+			ex.printStackTrace();
+		} finally {
+			// Ensure the database connection is closed
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException ex) {
+					System.out.println("Error closing connection: " + ex.getMessage());
+				}
+			}
+		}
+
+		return toppings;
 	}
 
 	public static Topping findToppingByName(String name){
-		/*
-		 * Query the database for the topping using it's name.
-		 * If found, then return a Topping object for the topping.
-		 * If it's not found....then return null
-		 *  
-		 */
-		
+		ArrayList<Topping> toppings;
+		try {
+			toppings = getToppingList();
+		} catch (SQLException | IOException e) {
+			// Handle the error appropriately
+			System.err.println("Error occurred while obtaining topping list: " + e.getMessage());
+			// Depending on your error handling, you might want to return null or rethrow a different exception
+			return null;
+		}
 
+		for (Topping topping : toppings) {
+			if (topping.getTopName().equalsIgnoreCase(name)) {
+				return topping;
+			}
+		}
 
-
-
-		 return null;
+		return null;
 	}
 
 
@@ -633,52 +721,120 @@ public final class DBNinja {
 	
 	public static double getBaseCustPrice(String size, String crust) throws SQLException, IOException {
 		connect_to_db();
-		/* 
-		 * Query the database fro the base customer price for that size and crust pizza.
-		 * 
-		*/
-		
-		
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return 0.0;
+		/*
+		 * Query the database for the base customer price for that size and crust pizza.
+		 *
+		 */
+
+		double basePrice = 0.0; // Initialize base price to 0.
+
+		try {
+			// Prepare SQL query to get the base customer price for the specified size and crust.
+			String query = "SELECT CrustSizePriceCrust FROM crustsize WHERE CrustSizeSize = ? AND CrustSizeCrust = ?";
+			PreparedStatement pstmt = conn.prepareStatement(query);
+
+			pstmt.setString(1, size); // Set the size parameter in the query.
+			pstmt.setString(2, crust); // Set the crust parameter in the query.
+
+			ResultSet rs = pstmt.executeQuery();
+
+			// If a result is found, set basePrice to the retrieved value.
+			if (rs.next()) {
+				basePrice = rs.getDouble("CrustSizePriceCrust");
+			}
+		} catch (SQLException ex) {
+			System.out.println("SQL Error: " + ex.getMessage());
+			ex.printStackTrace();
+			throw ex; // Rethrow the exception to allow calling methods to handle.
+		} finally {
+			// Ensure the database connection is closed.
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException ex) {
+					System.out.println("Error closing connection: " + ex.getMessage());
+				}
+			}
+		}
+
+		return basePrice; // Return the base customer price.
 	}
 
 	public static double getBaseBusPrice(String size, String crust) throws SQLException, IOException {
 		connect_to_db();
-		/* 
-		 * Query the database fro the base business price for that size and crust pizza.
-		 * 
-		*/
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
-		return 0.0;
+		/*
+		 * Query the database for the base business price for that size and crust pizza.
+		 *
+		 */
+
+		double basePrice = 0.0; // Initialize base price to 0.
+
+		try {
+			// Prepare SQL query to get the base customer price for the specified size and crust.
+			String query = "SELECT CrustSizeCostBus FROM crustsize WHERE CrustSizeSize = ? AND CrustSizeCrust = ?";
+			PreparedStatement pstmt = conn.prepareStatement(query);
+
+			pstmt.setString(1, size); // Set the size parameter in the query.
+			pstmt.setString(2, crust); // Set the crust parameter in the query.
+
+			ResultSet rs = pstmt.executeQuery();
+
+			// If a result is found, set basePrice to the retrieved value.
+			if (rs.next()) {
+				basePrice = rs.getDouble("CrustSizeCostBus");
+			}
+		} catch (SQLException ex) {
+			System.out.println("SQL Error: " + ex.getMessage());
+			ex.printStackTrace();
+			throw ex; // Rethrow the exception to allow calling methods to handle.
+		} finally {
+			// Ensure the database connection is closed.
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException ex) {
+					System.out.println("Error closing connection: " + ex.getMessage());
+				}
+			}
+		}
+		return basePrice; // Return the base customer price.
 	}
 
 	public static void printInventory() throws SQLException, IOException {
 		connect_to_db();
 		/*
 		 * Queries the database and prints the current topping list with quantities.
-		 *  
+		 *
 		 * The result should be readable and sorted as indicated in the prompt.
-		 * 
 		 */
 
+		// ArrayList grabs toppings that are not out of stock
+		ArrayList<Topping> toppingList = getToppingList();
 
-		
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+		// Check if the toppings list is not empty
+		if (!toppingList.isEmpty()) {
+			// Print the header
+			System.out.printf("%-10s %-25s %-15s%n", "ID", "Name", "CurINVT");
 
+			// Print each topping's details
+			for (Topping topping : toppingList) {
+				System.out.printf("%-10d %-25s %-15d%n",
+						topping.getTopID(),
+						topping.getTopName(),
+						topping.getCurINVT());
+			}
+		} else {
+			System.out.println("No toppings available.");
+		}
 
+		// Remember to close your connection
+		if (conn != null) {
+			try {
+				conn.close();
+			} catch (SQLException ex) {
+				System.out.println("Error closing connection: " + ex.getMessage());
+			}
+		}
 	}
 	
 	public static void printToppingPopReport() throws SQLException, IOException
