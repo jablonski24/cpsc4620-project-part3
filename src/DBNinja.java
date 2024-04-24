@@ -78,7 +78,7 @@ public final class DBNinja {
 			// Insert into the 'order' table.
 			String insertOrderSQL = "INSERT INTO `order` (OrderType, OrderTimestamp, OrderStatus, OrderPrice, OrderCost) VALUES (?, ?, ?, ?, ?)";
 			// Changed "order" to "`order`" because "order" is a reserved SQL keyword.
-			try (PreparedStatement orderStmt = conn.prepareStatement(insertOrderSQL)) {
+			try (PreparedStatement orderStmt = conn.prepareStatement(insertOrderSQL, Statement.RETURN_GENERATED_KEYS)) {
 				// We need to specify Statement.RETURN_GENERATED_KEYS to be able to retrieve the order ID.
 				orderStmt.setString(1, o.getOrderType());
 				orderStmt.setString(2, o.getDate());
