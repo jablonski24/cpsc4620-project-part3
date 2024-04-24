@@ -70,23 +70,88 @@ public final class DBNinja {
 	PizzaList = new ArrayList<Pizza>();
 	DiscountList = new ArrayList<Discount>();*/
 
-	
-	public static void addOrder(Order o) throws SQLException, IOException 
-	{
-		connect_to_db();
-		/*
-		 * add code to add the order to the DB. Remember that we're not just
-		 * adding the order to the order DB table, but we're also recording
-		 * the necessary data for the delivery, dinein, and pickup tables
-		 * 
-		 */
 
-	
+	public static void addOrder(Order o) throws SQLException, IOException {
+		try {
+			connect_to_db();
 
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+			// Insert into the 'order' table.
+			String insertOrderSQL = "INSERT INTO `order` (OrderType, OrderTimestamp, OrderStatus, OrderPrice, OrderCost) VALUES (?, ?, ?, ?, ?)";
+			// Changed "order" to "`order`" because "order" is a reserved SQL keyword.
+			try (PreparedStatement orderStmt = conn.prepareStatement(insertOrderSQL)) {
+				// We need to specify Statement.RETURN_GENERATED_KEYS to be able to retrieve the order ID.
+				orderStmt.setString(1, o.getOrderType());
+				orderStmt.setString(2, o.getDate());
+				orderStmt.setInt(3, o.getIsComplete());
+				orderStmt.setDouble(4, o.getCustPrice());
+				orderStmt.setDouble(5, o.getBusPrice());
+				orderStmt.executeUpdate();
+
+				// Retrieve the generated OrderID.
+				try (ResultSet generatedKeys = orderStmt.getGeneratedKeys()) {
+					if (generatedKeys.next()) {
+						o.setOrderID(generatedKeys.getInt(1)); // Set the OrderID in the order object.
+					} else {
+						throw new SQLException("Creating order failed, no ID obtained.");
+					}
+				}
+			}
+
+			// Handle different types of orders.
+			if ("PICKUP".equalsIgnoreCase(o.getOrderType()) && o instanceof PickupOrder) {
+				// Insert into 'pickup' table
+				PickupOrder pickupOrder = (PickupOrder) o;
+				String pickupSQL = "INSERT INTO pickup (PickupOrderID, PickupCustomerID) VALUES (?, ?)";
+				try (PreparedStatement pickupStmt = conn.prepareStatement(pickupSQL)) {
+					pickupStmt.setInt(1, pickupOrder.getOrderID());
+					pickupStmt.setInt(2, pickupOrder.getCustID());
+					pickupStmt.executeUpdate();
+				}
+			} else if ("DELIVERY".equalsIgnoreCase(o.getOrderType()) && o instanceof DeliveryOrder) {
+				// Insert into 'delivery' table
+				DeliveryOrder deliveryOrder = (DeliveryOrder) o;
+				String deliverySQL = "INSERT INTO delivery (DeliveryOrderID, DeliveryCustomerID) VALUES (?, ?)";
+				try (PreparedStatement deliveryStmt = conn.prepareStatement(deliverySQL)) {
+					deliveryStmt.setInt(1, deliveryOrder.getOrderID());
+					deliveryStmt.setInt(2, deliveryOrder.getCustID());
+					deliveryStmt.executeUpdate();
+				}
+			} else if ("DINEIN".equalsIgnoreCase(o.getOrderType()) && o instanceof DineinOrder) {
+				// Insert into 'dinein' table
+				DineinOrder dineInOrder = (DineinOrder) o;
+				String dineinSQL = "INSERT INTO dinein (DineInOrderID, DineInTable) VALUES (?, ?)";
+				try (PreparedStatement dineInStmt = conn.prepareStatement(dineinSQL)) {
+					dineInStmt.setInt(1, dineInOrder.getOrderID());
+					dineInStmt.setInt(2, dineInOrder.getTableNum());
+					dineInStmt.executeUpdate();
+				}
+			}
+
+			conn.commit(); // Commit the transaction.
+
+		} catch (SQLException e) {
+			if (conn != null) {
+				try {
+					conn.rollback(); // Rollback on error.
+				} catch (SQLException ex) {
+					System.err.println("Rollback failed: " + ex.getMessage());
+				}
+			}
+			throw e; // Rethrow the exception to signal that an error occurred.
+		} finally {
+			if (conn != null) {
+				try {
+					conn.setAutoCommit(true); // Reset default behavior.
+					conn.close(); // Close the connection.
+				} catch (SQLException ex) {
+					System.err.println("Connection close failed: " + ex.getMessage());
+				}
+			}
+		}
+		// Connection is closed in the finally block so there's no need for an additional close statement.
 	}
-	
+
+
 	public static void addPizza(Pizza p) throws SQLException, IOException
 	{
 		connect_to_db();
@@ -246,6 +311,9 @@ public final class DBNinja {
 			ArrayList<Order> returned_list;
 
 		 }
+		 else{
+
+		 }
 		
 		//DO NOT FORGET TO CLOSE YOUR CONNECTION
 		return null;
@@ -313,21 +381,50 @@ public final class DBNinja {
 
 
 	public static ArrayList<Customer> getCustomerList() throws SQLException, IOException {
-		connect_to_db();
 		/*
 		 * Query the data for all the customers and return an arrayList of all the customers. 
 		 * Don't forget to order the data coming from the database appropriately.
 		 * 
 		*/
+		/*
+		 * Query the data for all the customers and return an arrayList of all the customers.
+		 * Don't forget to order the data coming from the database appropriately.
+		 *
+		 */
+		try {
+			connect_to_db();
+		}
+		catch (IOException | SQLException e){
+			System.out.println(e);
+		}
+		PreparedStatement os;
+		ResultSet rset;
+		String query;
+		query = "SELECT * FROM customer;";
+
+		try {
+			os = conn.prepareStatement(query);
+			rset = os.executeQuery();
+
+			ArrayList<Customer> returnList = new ArrayList<>();
+			while(rset.next())
+			{
+
+				Customer currCust = new Customer(rset.getInt(1), rset.getString(3), rset.getString(4), rset.getString(2));
+				returnList.add(currCust);
+			}
 
 
-		
-		
-		
-		
-		
-		//DO NOT FORGET TO CLOSE YOUR CONNECTION
+			conn.close();
+			return returnList;
+
+		}
+		catch (SQLException e){
+			System.out.println(e);
+		}
+
 		return null;
+
 	}
 
 	public static Customer findCustomerByPhone(String phoneNumber){
@@ -713,15 +810,15 @@ public final class DBNinja {
 	 * The next 3 private methods help get the individual components of a SQL datetime object. 
 	 * You're welcome to keep them or remove them.
 	 */
-	private static int getYear(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	public static int getYear(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(0,4));
 	}
-	private static int getMonth(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	public static int getMonth(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(5, 7));
 	}
-	private static int getDay(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
+	public static int getDay(String date)// assumes date format 'YYYY-MM-DD HH:mm:ss'
 	{
 		return Integer.parseInt(date.substring(8, 10));
 	}
