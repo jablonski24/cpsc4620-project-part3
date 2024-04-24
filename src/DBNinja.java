@@ -422,12 +422,43 @@ public final class DBNinja {
 
 
 	public static void addToInventory(Topping t, double quantity) throws SQLException, IOException {
-		connect_to_db();
 		/*
 		 * Updates the quantity of the topping in the database by the amount specified.
 		 * 
 		 * */
 
+		try {
+			connect_to_db();
+			// Prepare SQL statement to update the topping inventory.
+			String query = "UPDATE topping SET ToppingInventory = ToppingInventory + ? WHERE ToppingID = ?";
+			PreparedStatement pstmt = conn.prepareStatement(query);
+
+			// Set the quantity to add and the ToppingID for the topping to update.
+			pstmt.setDouble(1, quantity);
+			pstmt.setInt(2, t.getTopID());
+
+			// Execute the update.
+			int affectedRows = pstmt.executeUpdate();
+			if (affectedRows > 0) {
+				System.out.println("Inventory updated for ToppingID: " + t.getTopID());
+			} else {
+				System.out.println("No topping found with ID: " + t.getTopID());
+			}
+
+		} catch (SQLException ex) {
+			System.out.println("SQL Error: " + ex.getMessage());
+			ex.printStackTrace();
+			throw ex; // Rethrow the exception to allow calling methods to handle.
+		} finally {
+			// Ensure the database connection is closed.
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException ex) {
+					System.out.println("Error closing connection: " + ex.getMessage());
+				}
+			}
+		}
 
 		
 		

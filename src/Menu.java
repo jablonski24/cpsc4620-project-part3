@@ -44,19 +44,20 @@ public class Menu {
 				EnterOrder();
 				break;
 			case 2:// view customers
-				// DBNinja.printInventory();
+//				DBNinja.addToInventory(DBNinja.findToppingByName("Bacon"), -10);
+//				DBNinja.printInventory();
 //				double cost = DBNinja.getBaseBusPrice("XLarge", "Pan");
 //				System.out.println(cost);
 //				double price = DBNinja.getBaseCustPrice("XLarge", "Pan");
 //				System.out.println(price);
 //				Topping topping = DBNinja.findToppingByName("");
 //				System.out.println(topping);
-				ArrayList<Topping> toppingList = DBNinja.getToppingList();
+//				ArrayList<Topping> toppingList = DBNinja.getToppingList();
 
 				// Iterate over the ArrayList and print out the topping details
-				for (Topping topping : toppingList) {
-					System.out.println(topping.toString());
-				}
+//				for (Topping topping : toppingList) {
+//					System.out.println(topping.toString());
+//				}
 				//viewCustomers();
 				break;
 			case 3:// enter customer
